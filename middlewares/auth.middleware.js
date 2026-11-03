@@ -31,6 +31,14 @@ export const authMiddleware = (req, res, next) => {
     req.user = payload;
     next();
   } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      err.status = 401;
+      err.message = "Access Token đã hết hạn";
+    } else if (err.name === "JsonWebTokenError") {
+      err.status = 401;
+      err.message = "Access Token không hợp lệ";
+    }
+
     next(err);
   }
 };

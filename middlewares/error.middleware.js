@@ -8,11 +8,17 @@ export const notFoundHandler = (req, res, next) => {
 export const errorHandler = (err, req, res, next) => {
   console.error(err);
 
-  const statusCode = err.status || 500;
+  let statusCode = err.status || 500;
+  let message = err.message || "Internal Server Error";
+
+  if (err.code === "LIMIT_FILE_SIZE") {
+    statusCode = 400;
+    message = "Ảnh không được vượt quá 5 MB";
+  }
 
   res.status(statusCode).json({
     success: false,
-    message: err.message || "Internal Server Error",
+    message,
     ...(err.details && { errors: err.details }),
   });
 };

@@ -2,6 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import rootRouter from "./routes/index.js";
+import cors from "cors";
+import path from "path";
 import {
   errorHandler,
   notFoundHandler,
@@ -12,8 +14,13 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 app.use(express.json());
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use(morgan("combined"));
 
 app.get("/", (req, res) => {

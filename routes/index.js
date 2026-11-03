@@ -4,14 +4,18 @@ import roomTypeRoutes from "./roomType.routes.js";
 import authRoutes from "./auth.routes.js";
 import customerRoutes from "./customer.routes.js";
 import bookingRoutes from "./booking.routes.js";
+import dashboardRoutes from "./dashboard.routes.js";
+import channelManagerRoutes from "./channelManager.routes.js";
 
 const router = express.Router();
 
 router.use("/rooms", roomRouter);
-router.use("/room-type", roomTypeRoutes);
+router.use("/room-types", roomTypeRoutes);
 router.use("/auth", authRoutes);
 router.use("/customers", customerRoutes);
 router.use("/bookings", bookingRoutes);
+router.use("/dashboard", dashboardRoutes);
+router.use("/channel-manager", channelManagerRoutes);
 
 router.get("/health", (req, res) => {
   res.status(200).json({

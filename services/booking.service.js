@@ -146,7 +146,7 @@ export const createBookingService = async (data, user) => {
     }
 
     const totalPrice = pricePerNight * nights;
-
+    const initialStatus = isManager(user) ? "confirmed" : "pending";
     if (!Number.isSafeInteger(totalPrice)) {
       throw createError("Tổng tiền vượt giới hạn cho phép", 400);
     }
@@ -159,6 +159,7 @@ export const createBookingService = async (data, user) => {
         check_in: checkIn,
         check_out: checkOut,
         total_price: totalPrice,
+        status: initialStatus,
         note: data.note?.trim() || null,
       },
       connection,
