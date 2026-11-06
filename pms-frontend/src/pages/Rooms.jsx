@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import {
   getRoomsApi,
@@ -6,7 +5,6 @@ import {
   createRoomApi,
   updateRoomApi,
   deleteRoomApi,
-  uploadRoomImageApi,
 } from "../Services/api";
 import "./Rooms.css";
 
@@ -16,7 +14,6 @@ const initialForm = {
   price: "",
   status: "available",
   description: "",
-  image_url: "",
 };
 
 const statusLabels = {
@@ -30,6 +27,7 @@ const API_BASE_URL = "http://localhost:3000";
 function Rooms() {
   const [rooms, setRooms] = useState([]);
   const [roomTypes, setRoomTypes] = useState([]);
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -42,30 +40,38 @@ function Rooms() {
   const [typeFilter, setTypeFilter] = useState("");
 
   const [form, setForm] = useState(initialForm);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
   const [imagePreview, setImagePreview] = useState("");
 
+  // Chuyển URL ảnh thành đường dẫn hiển thị
   const getImageUrl = (url) => {
     if (!url) return "";
 
-    if (url.startsWith("http://") || url.startsWith("https://")) {
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:") ||
+      url.startsWith("blob:")
+    ) {
       return url;
     }
 
     return `${API_BASE_URL}${url}`;
   };
 
+  // Lấy danh sách loại phòng
   const loadRoomTypes = async () => {
     const result = await getRoomTypesApi();
     setRoomTypes(result.data || []);
   };
 
+  // Lấy danh sách phòng
   const loadRooms = async (page = 1) => {
     setLoading(true);
     setError("");
@@ -82,6 +88,7 @@ function Rooms() {
       const result = await getRoomsApi(params);
 
       setRooms(result.data || []);
+
       setPagination(
         result.pagination || {
           page,
@@ -97,6 +104,7 @@ function Rooms() {
     }
   };
 
+  // Tải dữ liệu ban đầu
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -109,53 +117,63 @@ function Rooms() {
     loadInitialData();
   }, []);
 
+  // Tải lại danh sách khi thay đổi bộ lọc
   useEffect(() => {
     loadRooms(1);
   }, [statusFilter, typeFilter]);
 
+  // Tìm kiếm phòng theo số phòng
   const filteredRooms = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
     if (!keyword) return rooms;
 
     return rooms.filter((room) =>
-      room.room_number.toLowerCase().includes(keyword),
+      String(room.room_number).toLowerCase().includes(keyword),
     );
   }, [rooms, search]);
 
+  // Mở form thêm phòng
   const openCreateModal = () => {
     setEditingId(null);
     setForm(initialForm);
+    setSelectedImageFile(null);
     setImagePreview("");
     setError("");
     setShowModal(true);
   };
 
+  // Mở form cập nhật phòng
   const openEditModal = (room) => {
     setEditingId(room.id);
+
     setForm({
       room_number: room.room_number,
       room_type_id: String(room.room_type_id),
       price: room.price,
       status: room.status,
       description: room.description || "",
-      image_url: room.image_url || "",
     });
+
+    setSelectedImageFile(null);
     setImagePreview(room.image_url || "");
     setError("");
     setShowModal(true);
   };
 
+  // Đóng form
   const closeModal = () => {
-    if (saving || uploadingImage) return;
+    if (saving) return;
 
     setShowModal(false);
     setEditingId(null);
     setForm(initialForm);
+    setSelectedImageFile(null);
     setImagePreview("");
     setError("");
   };
 
+  // Xử lý thay đổi dữ liệu form
   const handleFormChange = (event) => {
     const { name, value } = event.target;
 
@@ -165,15 +183,8 @@ function Rooms() {
     }));
   };
 
-  const handleImageUrlChange = (event) => {
-    const value = event.target.value;
-
-    handleFormChange(event);
-    setImagePreview(value);
-    setError("");
-  };
-
-  const handleImageChange = async (event) => {
+  // Chọn ảnh và tạo preview, chưa upload lên Cloudinary
+  const handleImageChange = (event) => {
     const file = event.target.files[0];
 
     if (!file) return;
@@ -192,38 +203,30 @@ function Rooms() {
       return;
     }
 
-    setUploadingImage(true);
+    setSelectedImageFile(file);
     setError("");
 
-    const previewUrl = URL.createObjectURL(file);
-    setImagePreview(previewUrl);
+    const reader = new FileReader();
 
-    try {
-      const imageUrl = await uploadRoomImageApi(file);
+    reader.onload = () => {
+      setImagePreview(reader.result);
+    };
 
-      setForm((prev) => ({
-        ...prev,
-        image_url: imageUrl,
-      }));
+    reader.onerror = () => {
+      setError("Không thể đọc file ảnh");
+      setSelectedImageFile(null);
+      setImagePreview("");
+    };
 
-      setImagePreview(imageUrl);
-    } catch (err) {
-      setError(err.message);
-      setImagePreview(form.image_url);
-    } finally {
-      URL.revokeObjectURL(previewUrl);
-      setUploadingImage(false);
-      event.target.value = "";
-    }
+    reader.readAsDataURL(file);
+
+    // Cho phép chọn lại cùng một file nếu cần
+    event.target.value = "";
   };
 
+  // Thêm hoặc cập nhật phòng
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    if (uploadingImage) {
-      setError("Vui lòng đợi ảnh tải lên hoàn tất");
-      return;
-    }
 
     setSaving(true);
     setError("");
@@ -234,22 +237,24 @@ function Rooms() {
       price: Number(form.price),
       status: form.status,
       description: form.description.trim() || null,
-      image_url: form.image_url.trim() || null,
     };
 
     try {
       if (editingId) {
-        await updateRoomApi(editingId, roomData);
+        await updateRoomApi(editingId, roomData, selectedImageFile);
       } else {
-        await createRoomApi(roomData);
+        await createRoomApi(roomData, selectedImageFile);
       }
+
+      const currentPage = editingId ? pagination.page : 1;
 
       setShowModal(false);
       setEditingId(null);
       setForm(initialForm);
+      setSelectedImageFile(null);
       setImagePreview("");
 
-      await loadRooms(editingId ? pagination.page : 1);
+      await loadRooms(currentPage);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -257,6 +262,7 @@ function Rooms() {
     }
   };
 
+  // Xóa phòng
   const handleDelete = async (room) => {
     const confirmed = window.confirm(
       `Bạn có chắc chắn muốn xóa phòng ${room.room_number}?`,
@@ -280,8 +286,8 @@ function Rooms() {
     }
   };
 
-  const formatPrice = (price) =>
-    Number(price).toLocaleString("vi-VN") + " ₫";
+  // Định dạng giá tiền
+  const formatPrice = (price) => Number(price).toLocaleString("vi-VN") + " ₫";
 
   return (
     <div className="rooms-page">
@@ -399,6 +405,9 @@ function Rooms() {
                           className="room-thumbnail"
                           src={getImageUrl(room.image_url)}
                           alt={`Phòng ${room.room_number}`}
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
                         />
                       ) : (
                         <span className="no-room-image">Chưa có ảnh</span>
@@ -484,6 +493,7 @@ function Rooms() {
                 className="modal-close"
                 onClick={closeModal}
                 type="button"
+                disabled={saving}
               >
                 ×
               </button>
@@ -547,27 +557,19 @@ function Rooms() {
 
                 <div className="full-width image-form-group">
                   <label>
-                    Đường dẫn hình ảnh
-                    <input
-                      name="image_url"
-                      value={form.image_url}
-                      onChange={handleImageUrlChange}
-                      placeholder="https://..."
-                    />
-                  </label>
-
-                  <label>
-                    Hoặc chọn ảnh từ máy tính
+                    Chọn ảnh phòng
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       onChange={handleImageChange}
-                      disabled={uploadingImage}
+                      disabled={saving}
                     />
                   </label>
 
-                  {uploadingImage && (
-                    <p className="uploading-text">Đang tải ảnh lên...</p>
+                  {selectedImageFile && (
+                    <p className="uploading-text">
+                      Đã chọn: {selectedImageFile.name}
+                    </p>
                   )}
 
                   {imagePreview && (
@@ -601,7 +603,7 @@ function Rooms() {
                   type="button"
                   className="cancel-button"
                   onClick={closeModal}
-                  disabled={saving || uploadingImage}
+                  disabled={saving}
                 >
                   Hủy
                 </button>
@@ -609,15 +611,13 @@ function Rooms() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={saving || uploadingImage}
+                  disabled={saving}
                 >
-                  {uploadingImage
-                    ? "Đang tải ảnh..."
-                    : saving
-                      ? "Đang lưu..."
-                      : editingId
-                        ? "Lưu thay đổi"
-                        : "Thêm phòng"}
+                  {saving
+                    ? "Đang lưu..."
+                    : editingId
+                      ? "Lưu thay đổi"
+                      : "Thêm phòng"}
                 </button>
               </div>
             </form>

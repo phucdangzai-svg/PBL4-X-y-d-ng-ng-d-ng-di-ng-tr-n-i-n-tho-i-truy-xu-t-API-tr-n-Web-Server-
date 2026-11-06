@@ -139,19 +139,47 @@ export const getRoomsApi = async (params = {}) => {
   return request(`/rooms${query ? `?${query}` : ""}`);
 };
 
-// Thêm phòng
-export const createRoomApi = async (roomData) => {
+// Tạo phòng (có thể kèm ảnh)
+export const createRoomApi = async (roomData, imageFile = null) => {
+  let body;
+
+  if (imageFile) {
+    body = new FormData();
+
+    Object.entries(roomData).forEach(([key, value]) => {
+      body.append(key, value ?? "");
+    });
+
+    body.append("image", imageFile);
+  } else {
+    body = JSON.stringify(roomData);
+  }
+
   return request("/rooms", {
     method: "POST",
-    body: JSON.stringify(roomData),
+    body,
   });
 };
 
-// Cập nhật phòng
-export const updateRoomApi = async (id, roomData) => {
+// Cập nhật phòng (có thể kèm ảnh mới)
+export const updateRoomApi = async (id, roomData, imageFile = null) => {
+  let body;
+
+  if (imageFile) {
+    body = new FormData();
+
+    Object.entries(roomData).forEach(([key, value]) => {
+      body.append(key, value ?? "");
+    });
+
+    body.append("image", imageFile);
+  } else {
+    body = JSON.stringify(roomData);
+  }
+
   return request(`/rooms/${id}`, {
     method: "PUT",
-    body: JSON.stringify(roomData),
+    body,
   });
 };
 
@@ -160,19 +188,6 @@ export const deleteRoomApi = async (id) => {
   return request(`/rooms/${id}`, {
     method: "DELETE",
   });
-};
-
-// Upload ảnh phòng
-export const uploadRoomImageApi = async (imageFile) => {
-  const formData = new FormData();
-  formData.append("image", imageFile);
-
-  const result = await request("/rooms/upload-image", {
-    method: "POST",
-    body: formData,
-  });
-
-  return result.data.image_url;
 };
 
 // ================= ROOM TYPE API =================
