@@ -38,9 +38,10 @@ export const getRoomById = async (req, res, next) => {
 };
 
 // tao them phong
+// Tao them phong
 export const createRoom = async (req, res, next) => {
   try {
-    const roomId = await roomService.createRoomService(req.body);
+    const roomId = await roomService.createRoomService(req.body, req.file);
 
     res.status(201).json({
       success: true,
@@ -55,11 +56,12 @@ export const createRoom = async (req, res, next) => {
 };
 
 // cap nhat phong
+// Cap nhat phong
 export const updateRoom = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
-    await roomService.updateRoomService(id, req.body);
+    await roomService.updateRoomService(id, req.body, req.file);
 
     res.status(200).json({
       success: true,
@@ -80,6 +82,22 @@ export const deleteRoom = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Room deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// Cap nhat anh phong rieng
+export const updateRoomImage = async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+
+    const image = await roomService.updateRoomImageService(id, req.file);
+
+    res.status(200).json({
+      success: true,
+      message: "Room image updated successfully",
+      data: image,
     });
   } catch (error) {
     next(error);

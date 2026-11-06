@@ -1,9 +1,10 @@
 import * as roomRepository from "../repositories/room.repository.js";
+import { uploadImage, deleteImage } from "../utils/cloudinary.js";
+import { removeFile } from "../utils/file.js";
 
 // Kiem tra du lieu phong
 const validateRoomData = (room) => {
-  const { room_number, room_type_id, price, status, description, image_url } =
-    room;
+  const { room_number, room_type_id, price, status, description } = room;
 
   const errors = [];
 
@@ -49,15 +50,6 @@ const validateRoomData = (room) => {
     errors.push("Description must be a string");
   }
 
-  // 6. Kiem tra URL anh
-  if (
-    image_url !== undefined &&
-    image_url !== null &&
-    typeof image_url !== "string"
-  ) {
-    errors.push("Image URL must be a string");
-  }
-
   // Neu co loi, tra ve tat ca loi
   if (errors.length > 0) {
     const error = new Error("Validation failed");
@@ -67,17 +59,26 @@ const validateRoomData = (room) => {
   }
 };
 
-// lay tat ca phong theo danh sach
+// Tao loi validation ID
+const validateRoomId = (id) => {
+  if (!Number.isInteger(id) || id <= 0) {
+    const error = new Error("Invalid room ID");
+    error.status = 400;
+    throw error;
+  }
+};
+
+// Lay tat ca phong theo danh sach
 export const getAllRoomsService = async (filters = {}) => {
   const allowedStatuses = ["available", "occupied", "maintenance"];
   const errors = [];
 
-  // 1. Kiểm tra trạng thái phòng
+  // 1. Kiem tra trang thai phong
   if (filters.status && !allowedStatuses.includes(filters.status)) {
     errors.push("Invalid room status");
   }
 
-  // 2. Kiểm tra loại phòng
+  // 2. Kiem tra loai phong
   if (
     filters.room_type_id !== undefined &&
     (filters.room_type_id === "" ||
@@ -87,7 +88,7 @@ export const getAllRoomsService = async (filters = {}) => {
     errors.push("Invalid room type ID");
   }
 
-  // 3. Kiểm tra page và limit
+  // 3. Kiem tra page va limit
   const page = filters.page === undefined ? 1 : Number(filters.page);
   const limit = filters.limit === undefined ? 10 : Number(filters.limit);
 
@@ -99,7 +100,7 @@ export const getAllRoomsService = async (filters = {}) => {
     errors.push("Limit must be between 1 and 100");
   }
 
-  // 4. Trả lỗi nếu dữ liệu không hợp lệ
+  // 4. Tra loi neu du lieu khong hop le
   if (errors.length > 0) {
     const error = new Error("Validation failed");
     error.status = 400;
@@ -107,7 +108,7 @@ export const getAllRoomsService = async (filters = {}) => {
     throw error;
   }
 
-  // 5. Chuẩn hóa bộ lọc để dùng chung
+  // 5. Chuan hoa bo loc
   const roomFilters = {
     status: filters.status,
     room_type_id:
@@ -116,20 +117,19 @@ export const getAllRoomsService = async (filters = {}) => {
         : Number(filters.room_type_id),
   };
 
-  // 6. Lấy danh sách phòng theo trang
+  // 6. Lay danh sach phong theo trang
   const rooms = await roomRepository.getAllRooms({
     ...roomFilters,
     limit,
     offset: (page - 1) * limit,
   });
 
-  // 7. Đếm tổng số phòng theo cùng điều kiện lọc
+  // 7. Dem tong so phong
   const totalItems = await roomRepository.countRooms(roomFilters);
 
-  // 8. Tính tổng số trang
+  // 8. Tinh tong so trang
   const totalPages = Math.ceil(totalItems / limit);
 
-  // 9. Trả kết quả
   return {
     page,
     limit,
@@ -139,13 +139,9 @@ export const getAllRoomsService = async (filters = {}) => {
   };
 };
 
-// lay danh sach theo id
+// Lay phong theo ID
 export const getRoomByIdService = async (id) => {
-  if (!Number.isInteger(id) || id <= 0) {
-    const error = new Error("Invalid room ID");
-    error.status = 400;
-    throw error;
-  }
+  validateRoomId(id);
 
   const room = await roomRepository.getRoomById(id);
 
@@ -158,21 +154,34 @@ export const getRoomByIdService = async (id) => {
   return room;
 };
 
-// tao them phong
-
-export const createRoomService = async (room) => {
-  validateRoomData(room);
+// Tao phong
+export const createRoomService = async (room, file) => {
+  let uploadedImage = null;
 
   try {
+    validateRoomData(room);
+
+    // Neu co anh thi upload len Cloudinary
+    if (file) {
+      uploadedImage = await uploadImage(file.path);
+    }
+
+    // Luu thong tin phong vao database
     return await roomRepository.createRoom({
       room_number: room.room_number.trim(),
       room_type_id: Number(room.room_type_id),
       price: Number(room.price),
       status: room.status,
       description: room.description?.trim() || null,
-      image_url: room.image_url?.trim() || null,
+      image_url: uploadedImage?.image_url || null,
+      image_public_id: uploadedImage?.image_public_id || null,
     });
   } catch (error) {
+    // Neu database that bai thi xoa anh vua upload
+    if (uploadedImage) {
+      await deleteImage(uploadedImage.image_public_id).catch(() => {});
+    }
+
     if (error.code === "ER_DUP_ENTRY") {
       const duplicateError = new Error("Room number already exists");
       duplicateError.status = 409;
@@ -184,42 +193,65 @@ export const createRoomService = async (room) => {
       typeError.status = 400;
       throw typeError;
     }
+
     throw error;
+  } finally {
+    // Xoa file tam tren server
+    await removeFile(file?.path).catch(() => {});
   }
 };
 
-// cap nhat phong
-export const updateRoomService = async (id, room) => {
-  // 1. Kiem tra ID
-  if (!Number.isInteger(id) || id <= 0) {
-    const error = new Error("Invalid room ID");
-    error.status = 400;
-    throw error;
-  }
+// Cap nhat phong
+export const updateRoomService = async (id, room, file) => {
+  let uploadedImage = null;
 
-  // 2. Kiem tra phong co ton tai khong
-  const existingRoom = await roomRepository.getRoomById(id);
-
-  if (!existingRoom) {
-    const error = new Error("Room not found");
-    error.status = 404;
-    throw error;
-  }
-
-  // 3. Kiem tra du lieu cap nhat
-  validateRoomData(room);
-
-  // 4. Cap nhat phong
   try {
-    return await roomRepository.updateRoom(id, {
+    // 1. Kiem tra ID
+    validateRoomId(id);
+
+    // 2. Kiem tra phong ton tai
+    const existingRoom = await roomRepository.getRoomById(id);
+
+    if (!existingRoom) {
+      const error = new Error("Room not found");
+      error.status = 404;
+      throw error;
+    }
+
+    // 3. Kiem tra du lieu
+    validateRoomData(room);
+
+    // 4. Neu co anh moi thi upload len Cloudinary
+    if (file) {
+      uploadedImage = await uploadImage(file.path);
+    }
+
+    // 5. Cap nhat database
+    const updated = await roomRepository.updateRoom(id, {
       room_number: room.room_number.trim(),
       room_type_id: Number(room.room_type_id),
       price: Number(room.price),
       status: room.status,
       description: room.description?.trim() || null,
-      image_url: room.image_url?.trim() || null,
+
+      // Khong co anh moi thi giu anh cu
+      image_url: uploadedImage?.image_url || existingRoom.image_url,
+      image_public_id:
+        uploadedImage?.image_public_id || existingRoom.image_public_id,
     });
+
+    // 6. Database cap nhat thanh cong moi xoa anh cu
+    if (updated && uploadedImage && existingRoom.image_public_id) {
+      await deleteImage(existingRoom.image_public_id).catch(() => {});
+    }
+
+    return updated;
   } catch (error) {
+    // Neu cap nhat that bai thi xoa anh moi
+    if (uploadedImage) {
+      await deleteImage(uploadedImage.image_public_id).catch(() => {});
+    }
+
     if (error.code === "ER_DUP_ENTRY") {
       const duplicateError = new Error(
         "Another room already uses this room number",
@@ -235,18 +267,70 @@ export const updateRoomService = async (id, room) => {
     }
 
     throw error;
+  } finally {
+    await removeFile(file?.path).catch(() => {});
+  }
+};
+
+// Cap nhat anh phong rieng
+export const updateRoomImageService = async (id, file) => {
+  let uploadedImage = null;
+
+  try {
+    // 1. Kiem tra ID
+    validateRoomId(id);
+
+    // 2. Kiem tra file
+    if (!file) {
+      const error = new Error("Image file is required");
+      error.status = 400;
+      throw error;
+    }
+
+    // 3. Kiem tra phong ton tai
+    const existingRoom = await roomRepository.getRoomById(id);
+
+    if (!existingRoom) {
+      const error = new Error("Room not found");
+      error.status = 404;
+      throw error;
+    }
+
+    // 4. Upload anh moi
+    uploadedImage = await uploadImage(file.path);
+
+    // 5. Cap nhat URL va public ID vao database
+    const updated = await roomRepository.updateRoomImage(id, uploadedImage);
+
+    if (!updated) {
+      const error = new Error("Failed to update room image");
+      error.status = 500;
+      throw error;
+    }
+
+    // 6. Chi xoa anh cu sau khi database cap nhat thanh cong
+    if (existingRoom.image_public_id) {
+      await deleteImage(existingRoom.image_public_id).catch(() => {});
+    }
+
+    return uploadedImage;
+  } catch (error) {
+    // Neu that bai thi xoa anh moi vua upload
+    if (uploadedImage) {
+      await deleteImage(uploadedImage.image_public_id).catch(() => {});
+    }
+
+    throw error;
+  } finally {
+    await removeFile(file?.path).catch(() => {});
   }
 };
 
 // Xoa phong
 export const deleteRoomService = async (id) => {
-  if (!Number.isInteger(id) || id <= 0) {
-    const error = new Error("Invalid room ID");
-    error.status = 400;
-    throw error;
-  }
+  validateRoomId(id);
 
-  // Kiem tra phong co ton tai khong
+  // 1. Kiem tra phong ton tai
   const existingRoom = await roomRepository.getRoomById(id);
 
   if (!existingRoom) {
@@ -256,7 +340,15 @@ export const deleteRoomService = async (id) => {
   }
 
   try {
-    return await roomRepository.deleteRoom(id);
+    // 2. Xoa phong trong database
+    const deleted = await roomRepository.deleteRoom(id);
+
+    // 3. Xoa anh Cloudinary neu xoa phong thanh cong
+    if (deleted && existingRoom.image_public_id) {
+      await deleteImage(existingRoom.image_public_id).catch(() => {});
+    }
+
+    return deleted;
   } catch (error) {
     if (error.code === "ER_ROW_IS_REFERENCED_2") {
       const deleteError = new Error(

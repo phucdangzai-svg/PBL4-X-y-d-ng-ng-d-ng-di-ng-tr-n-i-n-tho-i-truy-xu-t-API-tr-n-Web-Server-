@@ -40,7 +40,8 @@ export const getAllRooms = async (filters = {}) => {
             r.price,
             r.status,
             r.description,
-            r.image_url
+            r.image_url,
+            r.image_public_id
         FROM rooms r
         LEFT JOIN room_types rt ON r.room_type_id = rt.id
         WHERE 1 = 1
@@ -81,7 +82,8 @@ export const getRoomById = async (id) => {
             r.price,
             r.status,
             r.description,
-            r.image_url
+            r.image_url,
+            r.image_public_id
         FROM rooms r
         LEFT JOIN room_types rt
             ON r.room_type_id = rt.id
@@ -94,21 +96,30 @@ export const getRoomById = async (id) => {
 };
 // tao them phong
 
+// Tao phong
 export const createRoom = async (room) => {
-  const { room_number, room_type_id, price, status, description, image_url } =
-    room;
+  const {
+    room_number,
+    room_type_id,
+    price,
+    status,
+    description,
+    image_url,
+    image_public_id,
+  } = room;
 
   const sql = `
-        INSERT INTO rooms (
-            room_number,
-            room_type_id,
-            price,
-            status,
-            description,
-            image_url
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
-    `;
+    INSERT INTO rooms (
+      room_number,
+      room_type_id,
+      price,
+      status,
+      description,
+      image_url,
+      image_public_id
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
 
   const [result] = await pool.query(sql, [
     room_number,
@@ -117,25 +128,35 @@ export const createRoom = async (room) => {
     status,
     description ?? null,
     image_url ?? null,
+    image_public_id ?? null,
   ]);
 
   return result.insertId;
 };
 // cap nhat phong
+// Cap nhat phong
 export const updateRoom = async (id, room) => {
-  const { room_number, room_type_id, price, status, description, image_url } =
-    room;
+  const {
+    room_number,
+    room_type_id,
+    price,
+    status,
+    description,
+    image_url,
+    image_public_id,
+  } = room;
 
   const sql = `
-        UPDATE rooms
-        SET room_number = ?,
-            room_type_id = ?,
-            price = ?,
-            status = ?,
-            description = ?,
-            image_url = ?
-        WHERE id = ?
-    `;
+    UPDATE rooms
+    SET room_number = ?,
+        room_type_id = ?,
+        price = ?,
+        status = ?,
+        description = ?,
+        image_url = ?,
+        image_public_id = ?
+    WHERE id = ?
+  `;
 
   const [result] = await pool.query(sql, [
     room_number,
@@ -144,6 +165,7 @@ export const updateRoom = async (id, room) => {
     status,
     description,
     image_url,
+    image_public_id,
     id,
   ]);
 
@@ -158,6 +180,22 @@ export const deleteRoom = async (id) => {
     `;
 
   const [result] = await pool.query(sql, [id]);
+
+  return result.affectedRows;
+};
+export const updateRoomImage = async (id, image) => {
+  const sql = `
+    UPDATE rooms
+    SET image_url = ?,
+        image_public_id = ?
+    WHERE id = ?
+  `;
+
+  const [result] = await pool.query(sql, [
+    image.image_url,
+    image.image_public_id,
+    id,
+  ]);
 
   return result.affectedRows;
 };

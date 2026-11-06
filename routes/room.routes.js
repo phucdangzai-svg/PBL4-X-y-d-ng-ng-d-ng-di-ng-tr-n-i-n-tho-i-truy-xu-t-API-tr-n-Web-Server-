@@ -5,51 +5,38 @@ import { uploadRoomImage } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
-// Public: xem danh sách và chi tiết phòng
+// Public: xem danh sach va chi tiet phong
 router.get("/", roomController.getAllRooms);
 router.get("/:id", roomController.getRoomById);
 
-// Owner và Admin: tải ảnh phòng lên
-router.post(
-  "/upload-image",
-  authMiddleware,
-  authorize("owner", "admin"),
-  uploadRoomImage,
-  (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng chọn ảnh",
-      });
-    }
-
-    res.status(201).json({
-      success: true,
-      message: "Upload ảnh thành công",
-      data: {
-        image_url: `/uploads/rooms/${req.file.filename}`,
-      },
-    });
-  },
-);
-
-// Owner và Admin: tạo phòng
+// Owner va Admin: tao phong (co the kem anh)
 router.post(
   "/",
   authMiddleware,
   authorize("owner", "admin"),
+  uploadRoomImage,
   roomController.createRoom,
 );
 
-// Owner và Admin: cập nhật phòng
+// Owner va Admin: cap nhat thong tin phong (co the kem anh moi)
 router.put(
   "/:id",
   authMiddleware,
   authorize("owner", "admin"),
+  uploadRoomImage,
   roomController.updateRoom,
 );
 
-// Owner và Admin: xóa phòng
+// Owner va Admin: chi cap nhat anh phong
+router.put(
+  "/:id/image",
+  authMiddleware,
+  authorize("owner", "admin"),
+  uploadRoomImage,
+  roomController.updateRoomImage,
+);
+
+// Owner va Admin: xoa phong
 router.delete(
   "/:id",
   authMiddleware,
