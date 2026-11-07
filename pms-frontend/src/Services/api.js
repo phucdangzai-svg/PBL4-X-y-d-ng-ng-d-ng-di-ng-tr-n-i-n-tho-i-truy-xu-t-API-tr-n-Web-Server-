@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
 
 // Dùng chung một lần refresh nếu nhiều request cùng hết hạn
 let refreshPromise = null;
