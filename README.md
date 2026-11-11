@@ -262,7 +262,7 @@ Nếu seed báo tài khoản đã tồn tại, kiểm tra `users.role_id` và b�
 
 Checklist kiểm thử:
 
-- **Auth:** đăng ký hợp lệ; thiếu/sai từng trường; username/email trùng; đăng nhập đúng/sai; thiếu token; token hết hạn; refresh; logout; `/me`.
+- **Auth:** đăng ký hợp lệ; email bắt buộc và hợp lệ; email trùng; đăng nhập bằng email đúng/sai; thiếu token; token hết hạn; refresh; logout; `/me`.
 - **Room/Room Type:** CRUD; ID sai/không tồn tại; trùng số phòng/tên loại phòng; loại phòng không tồn tại; status không hợp lệ; phân trang/lọc; thử quyền Guest/Owner/Admin; xóa tài nguyên đang được tham chiếu.
 - **Customer:** tạo/cập nhật hợp lệ; dữ liệu sai; Guest truy cập hồ sơ người khác; trùng hồ sơ gắn user; xóa khách có booking.
 - **Booking:** ngày không hợp lệ; checkout trước/bằng check-in; phòng không tồn tại/bảo trì; booking trùng ngày; Guest chưa có hồ sơ; Guest thao tác booking người khác; chuyển trạng thái không hợp lệ; kiểm tra ngày check-in/check-out; xác minh trạng thái phòng sau thao tác.
@@ -336,3 +336,45 @@ Cung cấp:
 - Các bước tái hiện lỗi
 
 Trao đổi với nhóm trước khi thay đổi API contract hoặc schema database dùng chung.
+
+## 12. Chạy Flutter Customer App
+
+### Khởi động Backend và MySQL
+
+Từ thư mục gốc repository, tạo `.env` từ `.env.example`, điền các giá trị database/JWT rồi chạy:
+
+```powershell
+docker compose up --build
+```
+
+Kiểm tra backend tại `http://localhost:3000/api/v1/health`.
+
+### Chạy trên Android Emulator
+
+Android Emulator truy cập máy host qua `10.0.2.2`:
+
+```powershell
+$flutter = "C:\Users\ADMIN\flutter\flutter\bin\flutter.bat"
+Set-Location mobile_apps\customer_app_one
+& $flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
+```
+
+### Chạy trên điện thoại thật
+
+Cho laptop và điện thoại vào cùng Wi-Fi, lấy IPv4 của laptop bằng `ipconfig` (ví dụ `192.168.1.10`), rồi cho phép Node/Docker qua Windows Firewall ở port `3000`:
+
+```powershell
+Set-Location mobile_apps\customer_app_one
+& $flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1
+```
+
+Không dùng `localhost` trên điện thoại thật vì `localhost` khi đó là chính điện thoại.
+
+### Đóng gói APK
+
+```powershell
+Set-Location mobile_apps\customer_app_one
+& $flutter build apk --release --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1
+```
+
+APK nằm tại `mobile_apps\customer_app_one\build\app\outputs\flutter-apk\app-release.apk`.

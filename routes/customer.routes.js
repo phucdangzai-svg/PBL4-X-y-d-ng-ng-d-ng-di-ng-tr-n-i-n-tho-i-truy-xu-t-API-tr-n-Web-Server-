@@ -12,6 +12,8 @@ router.get(
   customerController.getAllCustomers,
 );
 
+router.get("/me", customerController.getMyCustomer);
+router.put("/me", customerController.updateMyCustomer);
 router.get("/:id", customerController.getCustomerById);
 
 router.post(

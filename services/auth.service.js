@@ -22,17 +22,15 @@ const createError = (message, status = 400, details) => {
 };
 
 /**
- * Kiểm tra username và password theo quy tắc đăng ký.
+ * Kiểm tra email và password theo quy tắc đăng ký.
  */
-const validateCredentials = ({ username, password }) => {
+const validateCredentials = ({ email, password }) => {
   const errors = [];
 
-  if (typeof username !== "string" || !username.trim()) {
-    errors.push("Username is required");
-  } else if (username.trim().length < 3 || username.trim().length > 50) {
-    errors.push("Username must contain 3 to 50 characters");
-  } else if (!/^[a-zA-Z0-9_.-]+$/.test(username.trim())) {
-    errors.push("Username may contain letters, numbers, _, . and - only");
+  if (typeof email !== "string" || !email.trim()) {
+    errors.push("Email is required");
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    errors.push("Invalid email");
   }
 
   if (typeof password !== "string" || password.length < 8) {
@@ -46,7 +44,7 @@ const validateCredentials = ({ username, password }) => {
   }
 
   return {
-    username: username.trim(),
+    email: email.trim().toLowerCase(),
     password,
   };
 };
@@ -61,14 +59,15 @@ const validateCredentials = ({ username, password }) => {
 export const registerService = async (data = {}) => {
   const errors = [];
 
-  const { username, password, full_name, email, phone } = data;
+  const { password, full_name, email, phone } = data;
 
-  if (typeof username !== "string" || !username.trim()) {
-    errors.push("Username is required");
-  } else if (username.trim().length < 3 || username.trim().length > 50) {
-    errors.push("Username must contain 3 to 50 characters");
-  } else if (!/^[a-zA-Z0-9_.-]+$/.test(username.trim())) {
-    errors.push("Username may contain letters, numbers, _, . and - only");
+  if (typeof email !== "string" || !email.trim()) {
+    errors.push("Email is required");
+  } else if (
+    email.trim().length > 100 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  ) {
+    errors.push("Invalid email");
   }
 
   if (typeof password !== "string" || password.length < 8) {
@@ -83,16 +82,6 @@ export const registerService = async (data = {}) => {
     errors.push("Full name must not exceed 100 characters");
   }
 
-  if (email !== undefined && email !== null && email !== "") {
-    if (
-      typeof email !== "string" ||
-      email.length > 100 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    ) {
-      errors.push("Invalid email");
-    }
-  }
-
   if (phone !== undefined && phone !== null && phone !== "") {
     if (typeof phone !== "string" || !/^[0-9]{10}$/.test(phone)) {
       errors.push("Phone number must contain exactly 10 digits");
@@ -103,15 +92,7 @@ export const registerService = async (data = {}) => {
     throw createError("Validation failed", 400, errors);
   }
 
-  const normalizedUsername = username.trim();
-  const normalizedEmail =
-    typeof email === "string" && email.trim()
-      ? email.trim().toLowerCase()
-      : null;
-
-  if (await authRepository.isUsernameExists(normalizedUsername)) {
-    throw createError("Username already exists", 409);
-  }
+  const normalizedEmail = email.trim().toLowerCase();
 
   if (
     normalizedEmail &&
@@ -129,8 +110,7 @@ export const registerService = async (data = {}) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    const userId = await authRepository.createUser({
-      username: normalizedUsername,
+    const userId = await authRepository.createUserWithCustomer({
       password: hashedPassword,
       fullName: full_name.trim(),
       email: normalizedEmail,
@@ -140,14 +120,13 @@ export const registerService = async (data = {}) => {
 
     return {
       id: userId,
-      username: normalizedUsername,
-      full_name: full_name.trim(),
       email: normalizedEmail,
+      full_name: full_name.trim(),
       role: guestRole.name,
     };
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
-      throw createError("Username or email already exists", 409);
+      throw createError("Email already exists", 409);
     }
 
     throw err;
@@ -160,8 +139,8 @@ export const registerService = async (data = {}) => {
 export const loginService = async (data = {}) => {
   const errors = [];
 
-  if (typeof data.username !== "string" || !data.username.trim()) {
-    errors.push("Username is required");
+  if (typeof data.email !== "string" || !data.email.trim()) {
+    errors.push("Email is required");
   }
 
   if (typeof data.password !== "string" || !data.password) {
@@ -172,19 +151,23 @@ export const loginService = async (data = {}) => {
     throw createError("Validation failed", 400, errors);
   }
 
-  const user = await authRepository.findUserByUsername(data.username.trim());
+  const user = await authRepository.findUserByEmail(data.email.trim().toLowerCase());
 
   if (!user || !(await bcrypt.compare(data.password, user.password))) {
-    throw createError("Invalid username or password", 401);
+    throw createError("Invalid email or password", 401);
   }
 
   if (user.status !== 1) {
     throw createError("Account is disabled", 403);
   }
 
+  if (user.role === "guest") {
+    await authRepository.ensureCustomerForUser(user);
+  }
+
   const accessToken = generateAccessToken({
     id: user.id,
-    username: user.username,
+    email: user.email,
     role: user.role,
   });
 
@@ -200,7 +183,7 @@ export const loginService = async (data = {}) => {
   return {
     user: {
       id: user.id,
-      username: user.username,
+      email: user.email,
       role: user.role,
     },
     accessToken,
@@ -241,7 +224,7 @@ export const refreshTokenService = async (data = {}) => {
 
   const accessToken = generateAccessToken({
     id: user.id,
-    username: user.username,
+    email: user.email,
     role: user.role,
   });
 

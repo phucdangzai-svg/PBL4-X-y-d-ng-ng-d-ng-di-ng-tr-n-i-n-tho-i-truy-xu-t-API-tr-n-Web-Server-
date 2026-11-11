@@ -17,7 +17,7 @@ function AdminLayout() {
           </div>
 
           <div className="admin-user">
-            <strong>{user.username}</strong>
+            <strong>{user.email}</strong>
             <span>{user.role}</span>
           </div>
         </header>

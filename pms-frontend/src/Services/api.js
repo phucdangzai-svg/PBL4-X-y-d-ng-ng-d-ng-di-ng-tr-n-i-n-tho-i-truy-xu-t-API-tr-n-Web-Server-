@@ -109,14 +109,14 @@ const request = async (endpoint, options = {}) => {
 // ================= AUTH API =================
 
 // Đăng nhập
-export const loginApi = async (username, password) => {
+export const loginApi = async (email, password) => {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      username,
+      email,
       password,
     }),
   });

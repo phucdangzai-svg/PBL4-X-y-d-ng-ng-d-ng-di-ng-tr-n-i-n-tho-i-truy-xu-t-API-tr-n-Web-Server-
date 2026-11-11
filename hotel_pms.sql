@@ -439,17 +439,15 @@ DROP TABLE IF EXISTS `users`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `full_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `role_id` int NOT NULL,
   `status` tinyint NOT NULL DEFAULT '1',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`),
   KEY `role_id` (`role_id`),
   CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`)
@@ -462,7 +460,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'test_customer','test123456','Khach Hang Test','test_customer@example.com','0900000001',1,1,'2026-10-13 00:26:21','2026-10-13 00:26:21'),(2,'guest_demo','$2b$10$NKCLFO2kF3LMjn5xZ/oVQeAAyGYRhal4PQlu/o60.fv.qWJrF3grG','Guest Demo','guest_demo@example.com','0901234567',1,1,'2026-10-16 23:01:39','2026-10-16 23:01:39'),(3,'guest_demo2','$2b$10$anCAdcnDmYXn8z1gX9fyYuruwNoqqzp8O3esey1HORI.K10nUvhd6','Guest Demo','guest_demo2@example.com','0901234567',1,1,'2026-10-19 14:26:56','2026-10-19 14:26:56'),(4,'guest_demo3','$2b$10$dLTSC8wYCyOKsW7Q04V48.497KACHYpDCuIt91ypNPIRF9VkdqVL6','Guest Demo','guest_demo3@example.com','0901234567',1,1,'2026-10-19 14:35:59','2026-10-19 14:35:59'),(6,'admin_test','$2b$10$YicnPVUxvK5pP1HaM.GLe.bKtFaVCth3UmrQqgSzCktiIYVmjt5xi','Admin Test','admin_test@example.com','0900000002',2,1,'2026-10-19 15:25:04','2026-10-19 15:25:04'),(7,'owner_test','$2b$10$/fjwrijK8kO1i/lnwMo.XONS.iBJX.ufn51s1Eovx4aLg1gpplsvC','Owner Test','owner_test@example.com','0900000003',3,1,'2026-10-19 15:50:37','2026-10-19 15:50:37'),(8,'guest_demo4','$2b$10$bkqw9AXzAO893cRMs8bjcOQXq3X5LsSRyZ0ejh8wkjo4z/340gLbS','Guest Demo','guest_demo4@example.com','0901234567',1,1,'2026-10-19 15:52:40','2026-10-19 15:52:40'),(9,'abcxyz','$2b$10$oNEJ4E2hNriGA8crdjS4c.gHoXOlluEL9LDYhMul5zEcqfjBxqZK.','nguyen dang phuc','phucdangzai@gmail.com','0355765047',1,1,'2026-10-22 10:05:05','2026-10-22 10:05:05');
+INSERT INTO `users` (`id`,`password`,`full_name`,`email`,`phone`,`role_id`,`status`,`created_at`,`updated_at`) VALUES (1,'test123456','Khach Hang Test','test_customer@example.com','0900000001',1,1,'2026-10-13 00:26:21','2026-10-13 00:26:21'),(2,'$2b$10$NKCLFO2kF3LMjn5xZ/oVQeAAyGYRhal4PQlu/o60.fv.qWJrF3grG','Guest Demo','guest_demo@example.com','0901234567',1,1,'2026-10-16 23:01:39','2026-10-16 23:01:39'),(3,'$2b$10$anCAdcnDmYXn8z1gX9fyYuruwNoqqzp8O3esey1HORI.K10nUvhd6','Guest Demo','guest_demo2@example.com','0901234567',1,1,'2026-10-19 14:26:56','2026-10-19 14:26:56'),(4,'$2b$10$dLTSC8wYCyOKsW7Q04V48.497KACHYpDCuIt91ypNPIRF9VkdqVL6','Guest Demo','guest_demo3@example.com','0901234567',1,1,'2026-10-19 14:35:59','2026-10-19 14:35:59'),(6,'$2b$10$YicnPVUxvK5pP1HaM.GLe.bKtFaVCth3UmrQqgSzCktiIYVmjt5xi','Admin Test','admin_test@example.com','0900000002',2,1,'2026-10-19 15:25:04','2026-10-19 15:25:04'),(7,'$2b$10$/fjwrijK8kO1i/lnwMo.XONS.iBJX.ufn51s1Eovx4aLg1gpplsvC','Owner Test','owner_test@example.com','0900000003',3,1,'2026-10-19 15:50:37','2026-10-19 15:50:37'),(8,'$2b$10$bkqw9AXzAO893cRMs8bjcOQXq3X5LsSRyZ0ejh8wkjo4z/340gLbS','Guest Demo','guest_demo4@example.com','0901234567',1,1,'2026-10-19 15:52:40','2026-10-19 15:52:40'),(9,'$2b$10$oNEJ4E2hNriGA8crdjS4c.gHoXOlluEL9LDYhMul5zEcqfjBxqZK.','nguyen dang phuc','phucdangzai@gmail.com','0355765047',1,1,'2026-10-22 10:05:05','2026-10-22 10:05:05');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

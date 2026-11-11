@@ -65,6 +65,30 @@ export const getAllCustomersService = async (user) => {
   return customerRepository.findAllCustomers();
 };
 
+export const getCustomerByUserIdService = async (user) => {
+  const customer = await customerRepository.findCustomerByUserId(user.id);
+  if (!customer) {
+    throw createError("Chưa có hồ sơ khách hàng", 404);
+  }
+  return customer;
+};
+
+export const updateCustomerByUserIdService = async (data, user) => {
+  const customer = await customerRepository.findCustomerByUserId(user.id);
+  if (!customer) {
+    throw createError("Chưa có hồ sơ khách hàng", 404);
+  }
+  const customerData = validateCustomerData(data);
+  try {
+    return await customerRepository.updateCustomer(customer.id, customerData);
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      throw createError("Email hoặc thông tin khách hàng đã tồn tại", 409);
+    }
+    throw error;
+  }
+};
+
 export const getCustomerByIdService = async (id, user) => {
   const customerId = validateId(id);
   const customer = await customerRepository.findCustomerById(customerId);

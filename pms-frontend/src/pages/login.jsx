@@ -4,7 +4,7 @@ import { loginApi } from "../Services/api.js";
 import "../App.css";
 
 function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
@@ -19,7 +19,7 @@ function Login() {
 
     try {
       // Gọi API đăng nhập Backend
-      const data = await loginApi(username, password);
+      const data = await loginApi(email, password);
 
       // Chỉ Owner và Admin được truy cập PMS
       if (!["owner", "admin"].includes(data.user.role)) {
@@ -82,15 +82,15 @@ function Login() {
 
           <form className="login-form" onSubmit={handleLogin}>
             <div className="form-group">
-              <label htmlFor="username">Tên đăng nhập</label>
+              <label htmlFor="email">Email</label>
 
               <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder="Nhập tên đăng nhập"
-                autoComplete="username"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="Nhập email"
+                autoComplete="email"
                 required
               />
             </div>

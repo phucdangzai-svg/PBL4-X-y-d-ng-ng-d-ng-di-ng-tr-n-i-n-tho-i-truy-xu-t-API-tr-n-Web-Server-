@@ -13,6 +13,27 @@ export const getAllCustomers = async (req, res, next) => {
   }
 };
 
+export const getMyCustomer = async (req, res, next) => {
+  try {
+    const customer = await customerService.getCustomerByUserIdService(req.user);
+    res.status(200).json({ success: true, data: customer });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateMyCustomer = async (req, res, next) => {
+  try {
+    const customer = await customerService.updateCustomerByUserIdService(
+      req.body,
+      req.user,
+    );
+    res.status(200).json({ success: true, data: customer });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getCustomerById = async (req, res, next) => {
   try {
     const customer = await customerService.getCustomerByIdService(

@@ -1,2 +1,10 @@
 .env
 node_modules/
+
+# Flutter generated files
+mobile_apps/**/.dart_tool/
+mobile_apps/**/build/
+mobile_apps/**/.flutter-plugins
+mobile_apps/**/.flutter-plugins-dependencies
+mobile_apps/**/.packages
+mobile_apps/**/android/.gradle/
