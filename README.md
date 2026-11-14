@@ -365,7 +365,7 @@ Cho laptop và điện thoại vào cùng Wi-Fi, lấy IPv4 của laptop bằng 
 
 ```powershell
 Set-Location mobile_apps\customer_app_one
-& $flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1
+& $flutter run --dart-define=API_BASE_URL=http://192.168.1.63:3000/api/v1
 ```
 
 Không dùng `localhost` trên điện thoại thật vì `localhost` khi đó là chính điện thoại.
@@ -374,7 +374,7 @@ Không dùng `localhost` trên điện thoại thật vì `localhost` khi đó l
 
 ```powershell
 Set-Location mobile_apps\customer_app_one
-& $flutter build apk --release --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1
+& $flutter build apk --release --dart-define=API_BASE_URL=http://192.168.1.63:3000/api/v1
 ```
 
 APK nằm tại `mobile_apps\customer_app_one\build\app\outputs\flutter-apk\app-release.apk`.
