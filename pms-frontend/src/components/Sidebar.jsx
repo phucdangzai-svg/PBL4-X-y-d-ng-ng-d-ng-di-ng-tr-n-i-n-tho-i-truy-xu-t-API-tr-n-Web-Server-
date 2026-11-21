@@ -39,10 +39,6 @@ function Sidebar() {
         <NavLink to="/room-types" className="nav-item">
           ▧ Loại phòng
         </NavLink>
-
-        <NavLink to="/channel-manager" className="nav-item">
-          ◈ Channel Manager
-        </NavLink>
       </nav>
 
       <button className="logout-button" onClick={handleLogout}>

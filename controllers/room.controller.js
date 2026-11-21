@@ -36,6 +36,42 @@ export const getRoomById = async (req, res, next) => {
     next(error);
   }
 };
+// Lay danh sach phong cong khai cho Guest
+export const getPublicRooms = async (req, res, next) => {
+  try {
+    const result = await roomService.getPublicRoomsService(req.query);
+
+    res.status(200).json({
+      success: true,
+      message: "Get public rooms successfully",
+      data: result.data,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalItems: result.totalItems,
+        totalPages: result.totalPages,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Lay chi tiet phong cong khai cho Guest
+export const getPublicRoomById = async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const room = await roomService.getPublicRoomByIdService(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Get public room successfully",
+      data: room,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // tao them phong
 // Tao them phong

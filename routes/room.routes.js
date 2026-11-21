@@ -5,11 +5,32 @@ import { uploadRoomImage } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
-// Public: xem danh sach va chi tiet phong
-router.get("/", roomController.getAllRooms);
-router.get("/:id", roomController.getRoomById);
+// =====================================
+// PUBLIC API - Guest khong can dang nhap
+// =====================================
 
-// Owner va Admin: tao phong (co the kem anh)
+router.get("/public", roomController.getPublicRooms);
+router.get("/public/:id", roomController.getPublicRoomById);
+
+// =====================================
+// ADMIN API - Owner va Admin phai dang nhap
+// =====================================
+
+router.get(
+  "/",
+  authMiddleware,
+  authorize("owner", "admin"),
+  roomController.getAllRooms,
+);
+
+router.get(
+  "/:id",
+  authMiddleware,
+  authorize("owner", "admin"),
+  roomController.getRoomById,
+);
+
+// Owner va Admin: tao phong
 router.post(
   "/",
   authMiddleware,
@@ -18,7 +39,7 @@ router.post(
   roomController.createRoom,
 );
 
-// Owner va Admin: cap nhat thong tin phong (co the kem anh moi)
+// Owner va Admin: cap nhat thong tin phong
 router.put(
   "/:id",
   authMiddleware,
@@ -27,7 +48,7 @@ router.put(
   roomController.updateRoom,
 );
 
-// Owner va Admin: chi cap nhat anh phong
+// Owner va Admin: cap nhat anh phong
 router.put(
   "/:id/image",
   authMiddleware,

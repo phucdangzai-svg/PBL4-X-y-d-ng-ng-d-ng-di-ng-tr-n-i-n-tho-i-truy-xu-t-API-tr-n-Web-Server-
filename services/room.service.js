@@ -200,6 +200,77 @@ export const createRoomService = async (room, file) => {
     await removeFile(file?.path).catch(() => {});
   }
 };
+// Lay danh sach phong cong khai cho Guest
+export const getPublicRoomsService = async (filters = {}) => {
+  const errors = [];
+
+  // Kiem tra loai phong
+  if (
+    filters.room_type_id !== undefined &&
+    (filters.room_type_id === "" ||
+      !Number.isInteger(Number(filters.room_type_id)) ||
+      Number(filters.room_type_id) <= 0)
+  ) {
+    errors.push("Invalid room type ID");
+  }
+
+  // Kiem tra page va limit
+  const page = filters.page === undefined ? 1 : Number(filters.page);
+  const limit = filters.limit === undefined ? 10 : Number(filters.limit);
+
+  if (!Number.isInteger(page) || page <= 0) {
+    errors.push("Page must be a positive integer");
+  }
+
+  if (!Number.isInteger(limit) || limit <= 0 || limit > 100) {
+    errors.push("Limit must be between 1 and 100");
+  }
+
+  if (errors.length > 0) {
+    const error = new Error("Validation failed");
+    error.status = 400;
+    error.details = errors;
+    throw error;
+  }
+
+  const publicFilters = {
+    room_type_id:
+      filters.room_type_id === undefined
+        ? undefined
+        : Number(filters.room_type_id),
+  };
+
+  const rooms = await roomRepository.getPublicRooms({
+    ...publicFilters,
+    limit,
+    offset: (page - 1) * limit,
+  });
+
+  const totalItems = await roomRepository.countPublicRooms(publicFilters);
+
+  return {
+    page,
+    limit,
+    totalItems,
+    totalPages: Math.ceil(totalItems / limit),
+    data: rooms,
+  };
+};
+
+// Lay chi tiet phong cong khai cho Guest
+export const getPublicRoomByIdService = async (id) => {
+  validateRoomId(id);
+
+  const room = await roomRepository.getPublicRoomById(id);
+
+  if (!room) {
+    const error = new Error("Public room not found");
+    error.status = 404;
+    throw error;
+  }
+
+  return room;
+};
 
 // Cap nhat phong
 export const updateRoomService = async (id, room, file) => {

@@ -4,9 +4,26 @@ import { authMiddleware, authorize } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/", roomTypeController.getAllRoomTypes);
-router.get("/:id", roomTypeController.getRoomTypeById);
+// PUBLIC API - Guest
+router.get("/public", roomTypeController.getPublicRoomTypes);
+router.get("/public/:id", roomTypeController.getPublicRoomTypeById);
 
+// ADMIN API - Owner/Admin
+router.get(
+  "/",
+  authMiddleware,
+  authorize("owner", "admin"),
+  roomTypeController.getAllRoomTypes,
+);
+
+router.get(
+  "/:id",
+  authMiddleware,
+  authorize("owner", "admin"),
+  roomTypeController.getRoomTypeById,
+);
+
+// CREATE
 router.post(
   "/",
   authMiddleware,
@@ -14,6 +31,7 @@ router.post(
   roomTypeController.createRoomType,
 );
 
+// UPDATE
 router.put(
   "/:id",
   authMiddleware,
@@ -21,6 +39,7 @@ router.put(
   roomTypeController.updateRoomType,
 );
 
+// DELETE
 router.delete(
   "/:id",
   authMiddleware,

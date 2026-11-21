@@ -33,7 +33,35 @@ export const getRoomTypeById = async (req, res, next) => {
     next(error);
   }
 };
+// Danh sách loại phòng công khai cho Guest
+export const getPublicRoomTypes = async (req, res, next) => {
+  try {
+    const data = await roomTypeService.getAllRoomTypesService();
 
+    res.status(200).json({
+      success: true,
+      message: "Get public room types successfully",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Chi tiết loại phòng công khai cho Guest
+export const getPublicRoomTypeById = async (req, res, next) => {
+  try {
+    const data = await roomTypeService.getRoomTypeByIdService(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Get public room type successfully",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 /**
  * Tạo loại phòng mới.
  */

@@ -199,3 +199,86 @@ export const updateRoomImage = async (id, image) => {
 
   return result.affectedRows;
 };
+// Dem so phong duoc cong khai
+export const countPublicRooms = async (filters = {}) => {
+  const { room_type_id } = filters;
+
+  let sql = `
+    SELECT COUNT(*) AS total
+    FROM rooms r
+    WHERE r.status = 'available'
+  `;
+
+  const params = [];
+
+  if (room_type_id !== undefined) {
+    sql += " AND r.room_type_id = ?";
+    params.push(room_type_id);
+  }
+
+  const [rows] = await pool.query(sql, params);
+
+  return rows[0].total;
+};
+
+// Lay danh sach phong cong khai cho Guest
+export const getPublicRooms = async (filters = {}) => {
+  const { room_type_id, limit, offset } = filters;
+
+  let sql = `
+    SELECT
+      r.id,
+      r.room_number,
+      r.room_type_id,
+      rt.name AS room_type_name,
+      r.price,
+      r.description,
+      r.image_url,
+      r.status
+    FROM rooms r
+    LEFT JOIN room_types rt ON r.room_type_id = rt.id
+    WHERE r.status = 'available'
+  `;
+
+  const params = [];
+
+  if (room_type_id !== undefined) {
+    sql += " AND r.room_type_id = ?";
+    params.push(room_type_id);
+  }
+
+  sql += " ORDER BY r.id ASC";
+
+  if (limit !== undefined && offset !== undefined) {
+    sql += " LIMIT ? OFFSET ?";
+    params.push(limit, offset);
+  }
+
+  const [rows] = await pool.query(sql, params);
+
+  return rows;
+};
+
+// Lay chi tiet phong cong khai cho Guest
+export const getPublicRoomById = async (id) => {
+  const sql = `
+    SELECT
+      r.id,
+      r.room_number,
+      r.room_type_id,
+      rt.name AS room_type_name,
+      r.price,
+      r.description,
+      r.image_url,
+      r.status
+    FROM rooms r
+    LEFT JOIN room_types rt ON r.room_type_id = rt.id
+    WHERE r.id = ?
+      AND r.status = 'available'
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(sql, [id]);
+
+  return rows[0] || null;
+};
